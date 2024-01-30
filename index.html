@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Progress Tracker</title>
+    <style>
+        /* Estilos CSS básicos */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="loginForm">
+    <h2>Login</h2>
+    <h3>email: ejemplo@gmail.com pass: hola123</h3>
+    <input type="text" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="authenticate()">Submit</button>
+</div>
+
+<div class="container" id="progressForm" style="display: none;">
+    <h2>Enter Student Progress</h2>
+    <input type="text" id="studentName" placeholder="Student's Name">
+    <input type="number" id="hours" placeholder="Hours Met">
+    <textarea id="progress" placeholder="Progress Description"></textarea>
+    <button onclick="submitProgress()">Submit</button>
+</div>
+
+<div class="container" id="thankYouMessage" style="display: none;">
+    <h2>Thank You!</h2>
+    <p>Your progress has been submitted.</p>
+</div>
+<script src="airtable.browser.js"></script>
+
+
+<script>
+   
+
+var Airtable = require('airtable');
+Airtable.configure({
+    endpointUrl: 'https://api.airtable.com',
+    apiKey: 'patg653ew163q8eSu.cf3c72ca576be5cb646efe632bb4f0c8a2d762b897908f40fac8e70ef15e6c79'
+});
+var base = Airtable.base('appPrawYL2Z5EIpRn');
+console.log(base)
+    
+    // Ahora base contiene una instancia de la base de datos
+
+    // Función para autenticar al usuario
+    function authenticate() {
+    var email = document.getElementById('email').value;
+    var password = document.getElementById('password').value;
+
+    // Realiza una consulta a la tabla 'Table 2' en Airtable
+    base('Table 2').select({
+        // Selecciona todos los registros
+        view: "Grid view"
+    }).eachPage(function page(records, fetchNextPage) {
+        // Recorre cada registro
+        records.forEach(function(record) {
+            // Obtén el correo electrónico y la contraseña del registro actual
+            var recordEmail = record.get('email');
+            var recordPassword = record.get('password');
+
+            // Compara el correo electrónico y la contraseña del registro con los ingresados por el usuario
+            if (recordEmail === email && recordPassword === password) {
+                // Si hay coincidencia, autenticar al usuario
+                displayForm();
+                return; // Sale de la función para detener el bucle forEach
+            }
+        });
+        fetchNextPage();
+    }, function done(err) {
+        if (err) { 
+            console.error(err); 
+            alert('Error: Could not authenticate user');
+            return;
+        }
+    });
+}
+
+function submitProgress(){
+    const form = document.querySelector("#progressForm");
+    const thanks = document.querySelector("#thankYouMessage")
+    var name = document.getElementById('studentName').value;
+    var hours = document.getElementById('hours').value;
+    var description = document.getElementById('progress').value;
+
+    base('Table 3').create([
+  {
+    "fields": {
+        name: name,
+        hours: hours,
+        description: description
+    }
+  },
+], function(err, records) {
+  if (err) {
+    console.error(err);
+    console.log(hours)
+    return;
+  }
+  form.style.display = "none";
+  thanks.style.display = "block";
+  records.forEach(function (record) {
+    console.log(record.getId());
+  });
+});
+}
+
+function displayForm(){
+    const form = document.querySelector("#progressForm")
+    const login = document.querySelector("#loginForm")
+    form.style.display = "block"
+    login.style.display = "none"
+}
+</script>
+
+</body>
+</html>
